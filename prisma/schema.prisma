@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String           @id @default(cuid())
+  email              String           @unique
+  fullName           String
+  passwordHash       String?
+  subscriptionStatus String           @default("inactive") // active | inactive
+  plan               String?          // monthly | annual
+  stripeSessionId    String?          @unique
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  assessments        Assessment[]
+  payments           Payment[]
+  monitoringArea     MonitoringArea?
+}
+
+model MonitoringArea {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+  startArea         String
+  startLat          Float?
+  startLon          Float?
+  endArea           String
+  endLat            Float?
+  endLon            Float?
+  areaAiSummary     String?  @default("AI analysis pending")
+  cachedWeatherData String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Assessment {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  location        String
+  propertyValue   Float
+  
+  // Scores
+  riskScore       Float
+  hazardScore     Float
+  exposureScore   Float
+  
+  // Detailed Analysis
+  aiAnalysis      String
+  
+  createdAt       DateTime @default(now())
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Float
+  currency  String
+  status    String   // pending, success, failed
+  reference String   @unique // Paystack reference
+  createdAt DateTime @default(now())
+}
